@@ -581,47 +581,53 @@ const getFollowingAnimes = asyncHandler(async (req, res) => {
 // @desc      Lấy danh sách anime được đánh giá cao nhất
 // @route     GET /api/anime/top-rated
 // @access    Public
-const getTopRatedAnimes = asyncHandler(async (req, res) => {
-    try {
-        const animes = await Anime.find({})
-            .sort({ rate: -1, numberOfReviews: -1 })
-            .limit(20);
-        res.status(200).json(animes);
-    } catch (error) {
-        console.error('Lỗi khi lấy danh sách anime đánh giá cao nhất:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
-    }
+const getTopRatedAnimes = asyncHandler(async (_req, res) => {
+  try {
+    const animes = await Anime.find({})
+      .sort({ rating: -1, numberOfReviews: -1 }) // ✅ dùng "rating" thay vì "rate"
+      .limit(20);
+    res.status(200).json(animes);
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách anime đánh giá cao nhất:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
+  }
 });
+
+
 
 // @desc      Lấy danh sách anime có nhiều lượt xem nhất
 // @route     GET /api/anime/most-watched
 // @access    Public
-const getMostWatchedAnimes = asyncHandler(async (req, res) => {
-    try {
-        const animes = await Anime.find({})
-            .sort({ viewCount: -1 })
-            .limit(20);
-        res.status(200).json(animes);
-    } catch (error) {
-        console.error('Lỗi khi lấy danh sách anime nhiều lượt xem nhất:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
-    }
+const getMostWatchedAnimes = asyncHandler(async (_req, res) => {
+  try {
+    const animes = await Anime.find({})
+      .sort({ totalViews: -1 }) // ✅ dùng "totalViews" thay vì "viewCount"
+      .limit(20);
+    res.status(200).json(animes);
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách anime nhiều lượt xem nhất:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
+  }
 });
+
+
 
 // @desc      Lấy danh sách anime xem nhiều hôm nay
 // @route     GET /api/anime/trending-today
 // @access    Public
-const getTrendingAnimes = asyncHandler(async (req, res) => {
-    try {
-        const animes = await Anime.find({})
-            .sort({ dailyViewCount: -1 })
-            .limit(20);
-        res.status(200).json(animes);
-    } catch (error) {
-        console.error('Lỗi khi lấy danh sách anime xem nhiều hôm nay:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
-    }
+const getTrendingAnimes = asyncHandler(async (_req, res) => {
+  try {
+    const animes = await Anime.find({})
+      .sort({ viewsToday: -1 }) // ✅ dùng "viewsToday" thay vì "dailyViewCount"
+      .limit(20);
+    res.status(200).json(animes);
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách anime xem nhiều hôm nay:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
+  }
 });
+
+
 
 
 

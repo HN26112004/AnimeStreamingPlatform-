@@ -113,6 +113,22 @@ const animeSchema = mongoose.Schema(
             type: Number,
             default: 0,
         },
+        viewsToday: {
+  type: Number,
+  default: 0,
+},
+
+totalViews: {
+  type: Number,
+  default: 0,
+},
+
+rating: {
+  type: Number,
+  default: 0,
+},
+
+
         followers: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'

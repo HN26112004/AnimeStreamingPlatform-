@@ -73,8 +73,18 @@ const checkNewEpisodes = async () => {
   }
 };
 
+const resetDailyViews = async () => {
+  try {
+    const result = await Anime.updateMany({}, { viewsToday: 0 });
+    console.log(`[CRON] ✅ Đã reset viewsToday cho ${result.modifiedCount} anime.`);
+  } catch (error) {
+    console.error('[CRON] ❌ Lỗi khi reset viewsToday:', error);
+  }
+};
+
 const startCronJobs = () => {
   cron.schedule('*/01 * * * *', checkNewEpisodes);
+   cron.schedule('0 0 * * *', resetDailyViews); 
 };
 
 export default startCronJobs;

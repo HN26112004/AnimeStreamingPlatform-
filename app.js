@@ -37,7 +37,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 startCronJobs();
 
 // Route mặc định
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
     res.send('API đang chạy...');
 });
 
