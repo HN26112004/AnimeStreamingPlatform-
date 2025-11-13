@@ -1,7 +1,9 @@
 // src/controllers/episodeController.js
 
 import Anime from '../models/Anime.js';
-import Episode from '../models/Episode.js'; 
+import Episode from '../models/Episode.js';
+import cloudinary from '../config/cloudinary.js';
+
 import asyncHandler from 'express-async-handler';
 import path from 'path';
 import fs from 'fs';
@@ -11,18 +13,64 @@ import mongoose from 'mongoose';
 // @route     POST /api/episodes/upload-video
 // @access    Private/Admin
 const uploadVideo = asyncHandler(async (req, res) => {
-    // Logic này dựa trên cấu hình middleware uploadVideoMiddleware
-    if (!req.file) {
-        res.status(400);
-        throw new Error('Vui lòng chọn file video để tải lên.');
-    }
+  const { episodeId } = req.body;
 
-    // Trả về đường dẫn file đã được lưu trên server
-    res.status(200).json({
-        message: 'Tải video thành công.',
-        videoFile: `/uploads/videos/${req.file.filename}`, // Giả định thư mục lưu là 'uploads/videos'
-    });
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Vui lòng chọn file video để tải lên.');
+  }
+
+  const stream = cloudinary.uploader.upload_stream(
+    { resource_type: 'video' },
+    async (error, result) => {
+      if (error) {
+        console.error('Lỗi Cloudinary:', error);
+        res.status(500).json({ error: 'Lỗi khi upload lên Cloudinary' });
+        return;
+      }
+
+      // Cập nhật episode với URL CDN
+      const episode = await Episode.findByIdAndUpdate(
+        episodeId,
+        { videoFile: result.secure_url },
+        { new: true }
+      );
+
+      res.status(200).json({
+        message: 'Tải video lên Cloudinary thành công.',
+        videoFile: result.secure_url,
+        episode,
+      });
+    }
+  );
+
+  stream.end(req.file.buffer);
 });
+const downloadEpisode = asyncHandler(async (req, res) => {
+  const episode = await Episode.findById(req.params.id);
+  if (!episode || !episode.videoFile) {
+    res.status(404);
+    throw new Error('Không tìm thấy video để tải.');
+  }
+
+  // Kiểm tra quyền (đã đăng nhập)
+  if (!req.user) {
+    res.status(401);
+    throw new Error('Bạn cần đăng nhập để tải video.');
+  }
+
+  // Nếu là Cloudinary URL → redirect để tải
+  if (episode.videoFile.startsWith('https://res.cloudinary.com')) {
+    return res.redirect(episode.videoFile);
+  }
+
+  // Nếu là file local
+  const filePath = path.join(process.cwd(), episode.videoFile);
+  res.download(filePath);
+});
+
+
+
 // @desc      Tạo mùa mới cho một Anime (placeholder hoặc logic mở rộng)
 // @route     POST /api/episodes/add-season
 // @access    Private/Admin
@@ -73,7 +121,7 @@ const addSeason = asyncHandler(async (req, res) => {
 // @route     POST /api/episodes
 // @access    Private/Admin
 const addEpisode = asyncHandler(async (req, res) => {
-    const { animeId, seasonNumber, episodeNumber, title, desc, videoUrl, videoFile } = req.body;
+    const { animeId, seasonNumber, episodeNumber, title, desc, videoUrl } = req.body;
 
     // Kiểm tra đầu vào
     if (!animeId || seasonNumber == null || episodeNumber == null || !title) {
@@ -108,7 +156,7 @@ const addEpisode = asyncHandler(async (req, res) => {
         title,
         desc: desc || '',
         videoUrl: videoUrl || '',
-        videoFile: videoFile || ''
+        videoFile:  ''
     });
 
     const createdEpisode = await episode.save();
@@ -271,12 +319,16 @@ const deleteEpisode = asyncHandler(async (req, res) => {
     const animeId = episode.anime;
     
     // 1. Xóa file video nếu có
-    if (episode.videoFile) {
-        const filePath = path.join(process.cwd(), episode.videoFile); 
-        fs.unlink(filePath, (err) => {
-            if (err) console.error(`Lỗi khi xóa file video ${episode.videoFile}:`, err);
-        });
-    }
+    if (episode.videoFile && episode.videoFile.startsWith('https://res.cloudinary.com')) {
+  
+} else if (episode.videoFile) {
+  const filePath = path.join(process.cwd(), episode.videoFile);
+  fs.unlink(filePath, (err) => {
+    if (err) console.error(`Lỗi khi xóa file video ${episode.videoFile}:`, err);
+  });
+}
+
+
 
     // 2. Xóa tài liệu Episode
     await episode.deleteOne();
@@ -309,5 +361,6 @@ export {
     getEpisodesByAnimeId,
      getEpisodesByAnime,
     updateEpisode,
-    deleteEpisode
+    deleteEpisode,
+     downloadEpisode 
 };
