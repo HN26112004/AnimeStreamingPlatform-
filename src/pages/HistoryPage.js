@@ -54,6 +54,11 @@ const HistoryPage = () => {
         fetchHistory();
     }, [isAuthenticated, user]);
 
+    const clearLocalHistory = () => {
+  localStorage.removeItem('localWatchHistory');
+};
+
+
    const handleClearHistory = async () => {
         if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử xem không? Hành động này không thể hoàn tác.')) {
             try {

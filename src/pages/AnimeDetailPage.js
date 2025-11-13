@@ -4,6 +4,7 @@ import axiosInstance from '../utils/axiosInstance';
 import { AuthContext } from '../context/AuthContext';
 import { Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import { useRef } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Thêm import icons cho chức năng theo dõi
@@ -46,6 +47,7 @@ function AnimeDetailPage() {
     const { id } = useParams();
     const { user } = useContext(AuthContext);
     const [anime, setAnime] = useState(null);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [newComment, setNewComment] = useState('');
@@ -56,6 +58,10 @@ function AnimeDetailPage() {
     const [currentReview, setCurrentReview] = useState(null);
     const [isSaved, setIsSaved] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
+    const videoRef = useRef(null);
+const [hasRecordedView, setHasRecordedView] = useState(false);
+
+
     
     // --- BỔ SUNG STATE MỚI CHO TẬP PHIM ---
     const [episodes, setEpisodes] = useState([]);
@@ -78,6 +84,8 @@ function AnimeDetailPage() {
             setIsFollowing(false);
         }
     }, [user, id]);
+
+
 
     // --- HÀM MỚI: XỬ LÝ SỰ KIỆN THEO DÕI/BỎ THEO DÕI ---
     const handleFollowAnime = async () => {
@@ -167,11 +175,21 @@ function AnimeDetailPage() {
         }
     }, [id, checkSavedStatus, checkFollowingStatus]);
 
+const fetchStats = useCallback(async () => {
+  try {
+    const { data } = await axiosInstance.get(`/stats/anime/${id}`);
+    setStats(data);
+  } catch (err) {
+    console.error("Lỗi khi lấy thống kê lượt xem:", err);
+  }
+}, [id]);
+
 
     useEffect(() => {
         fetchAnime();
-        fetchEpisodes(); // Gọi hàm tải tập phim khi component mount
-    }, [fetchAnime, fetchEpisodes]);
+        fetchEpisodes(); 
+        fetchStats();
+    }, [fetchAnime, fetchEpisodes, fetchStats]);
 
     useEffect(() => {
         const fetchUserRating = async () => {
@@ -194,6 +212,35 @@ function AnimeDetailPage() {
 
         fetchUserRating();
     }, [user, id]);
+
+    useEffect(() => {
+  const handlePlay = () => {
+    if (hasRecordedView) return;
+
+    setTimeout(async () => {
+      try {
+        const { data } = await axiosInstance.post(`/stats/anime/${id}/stats`);
+        setStats(data);
+        setHasRecordedView(true);
+      } catch (err) {
+        console.error('Lỗi khi ghi nhận lượt xem:', err);
+      }
+    }, 10000); // Ghi nhận sau 10 giây xem
+  };
+
+  const video = videoRef.current;
+  if (video) {
+    video.addEventListener('play', handlePlay);
+  }
+
+  return () => {
+    if (video) {
+      video.removeEventListener('play', handlePlay);
+    }
+  };
+}, [id, hasRecordedView]);
+
+
 
     const handleRatingSubmit = async (ratingValue) => {
         if (!user) {
@@ -387,6 +434,22 @@ function AnimeDetailPage() {
             </div>
             
             <hr />
+{stats && (
+  <div className="row mt-5">
+    <div className="col-md-6 offset-md-3">
+      <div className="anime-stats p-4 bg-light rounded shadow-sm">
+        <h4 className="mb-3 text-center">📊 Thống kê lượt xem</h4>
+        <ul className="list-unstyled">
+          <li><strong>Tổng lượt xem:</strong> {stats.totalViews}</li>
+          <li><strong>Người dùng đăng nhập:</strong> {stats.registeredViews}</li>
+          <li><strong>Người dùng không đăng nhập:</strong> {stats.anonymousViews}</li>
+          <li><strong>Người dùng duy nhất:</strong> {stats.totalUniqueViewers}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+
 
             {/* --- BỔ SUNG PHẦN DANH SÁCH TẬP PHIM VÀ CÁC MÙA --- */}
             <div className="row mt-5">

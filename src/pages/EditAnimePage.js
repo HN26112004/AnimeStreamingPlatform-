@@ -96,9 +96,14 @@ function EditAnimePage() {
                 formData.append('titleImage', titleImageFile);
             } 
             
-            const config = {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            };
+           const config = {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+    Authorization: `Bearer ${JSON.parse(localStorage.getItem('authData'))?.token}`
+  }
+};
+
+
 
             const { data } = await axiosInstance.put(`/anime/${id}`, formData, config);
             setSuccess('Cập nhật anime thành công!');

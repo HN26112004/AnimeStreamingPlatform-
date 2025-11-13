@@ -16,6 +16,10 @@ import ManageEpisodesPage from './pages/ManageEpisodesPage';
 // Thêm import cho trang "Anime xem sau"
 import WatchLaterPage from './pages/WatchLaterPage';
 
+// thêm import cho chức năng xếp hạng
+import TopRatedAnimePage from './pages/TopRatedAnimePage';
+import MostWatchedAnimePage from './pages/MostWatchedAnimePage';
+import TrendingAnimePage from './pages/TrendingAnimePage';
 
 // Import component bảo vệ route
 import AdminRoute from './components/AdminRoute';
@@ -55,8 +59,12 @@ function App() {
             {/* ROUTE MỚI CHO TRANG XEM PHIM */}
             <Route path="/watch/:animeId/:episodeId" element={<WatchAnimePage />} />
 
+             {/* ROUTE MỚI CHO CHỨC NĂNG XẾP HẠNG */}
+            <Route path="/top-rated" element={<TopRatedAnimePage />} />
+<Route path="/most-watched" element={<MostWatchedAnimePage />} />
+<Route path="/trending-today" element={<TrendingAnimePage />} />
 
-            
+
             {/* CÁC ROUTES DÀNH CHO ADMIN, ĐƯỢC BẢO VỆ BỞI ADMINROUTE */}
             <Route
               path="/admin/add-anime"

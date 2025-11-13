@@ -1,6 +1,5 @@
 // src/pages/WatchAnimePage.js
-
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import axiosInstance from '../utils/axiosInstance';
 import { Container, Row, Col, Card, ListGroup, Button, Accordion, Spinner, Alert } from 'react-bootstrap';
@@ -43,27 +42,39 @@ function WatchAnimePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { animeId, episodeId } = useParams(); 
- // id là animeId
+    const videoRef = useRef(null);
+const [hasRecordedView, setHasRecordedView] = useState(false);
+const [selectedEpisode, setSelectedEpisode] = useState(null);
+
+
+
+ 
 
     // HÀM XỬ LÝ KHI CHỌN TẬP PHIM
     const handleEpisodeClick = useCallback(async (episode) => {
+      
   const normalizeYouTubeUrl = (url) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^\s&]+)/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : url;
   };
 
+
+
   const videoSource = episode.videoFile
-    ? `http://localhost:5000${episode.videoFile}`
-    : normalizeYouTubeUrl(episode.videoUrl);
+  ? episode.videoFile.startsWith('http')
+    ? episode.videoFile
+    : `http://localhost:5000${episode.videoFile}`
+  : normalizeYouTubeUrl(episode.videoUrl);
+
+
 
   if (!videoSource) {
     toast.error("Tập phim này chưa có video nguồn!");
     setVideoSrc(null);
     return;
   }
-
   setVideoSrc(videoSource);
-
+setSelectedEpisode(episode);
   if (anime) {
     if (isAuthenticated) {
       try {
@@ -79,6 +90,30 @@ function WatchAnimePage() {
   }
 }, [anime, isAuthenticated]);
 
+const handleDownloadEpisode = async () => {
+  if (!selectedEpisode) {
+    toast.error('Chưa có tập phim được chọn để tải.');
+    return;
+  }
+
+  try {
+    const response = await axiosInstance.get(`/episodes/${selectedEpisode._id}/download`, {
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${selectedEpisode.name || 'video'}.mp4`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    console.error('Lỗi khi tải video:', err);
+    toast.error('Không thể tải video. Bạn cần đăng nhập.');
+  }
+};
 
 
     // --- BỔ SUNG LOGIC FETCH DATA MỚI ---
@@ -117,8 +152,6 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
   return acc;
 }, {});
 
-
-
                 // Chuyển map thành array và sắp xếp theo seasonNumber
                 const sortedSeasons = Object.values(seasonsMap).sort((a, b) => a.seasonNumber - b.seasonNumber);
 
@@ -143,8 +176,36 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
         };
         fetchData();
 
-
     }, [animeId]); 
+
+    useEffect(() => {
+  const video = videoRef.current;
+
+  const handlePlay = () => {
+    if (hasRecordedView || !videoSrc || videoSrc.includes('youtube.com') || videoSrc.includes('youtu.be')) return;
+
+    setTimeout(async () => {
+      try {
+        await axiosInstance.post(`/stats/anime/${animeId}/stats`);
+        setHasRecordedView(true);
+      } catch (err) {
+        console.error('Lỗi khi ghi nhận lượt xem:', err);
+      }
+    }, 10000); // ghi nhận sau 10 giây
+  };
+
+  if (video) {
+    video.addEventListener('play', handlePlay);
+  }
+
+  return () => {
+    if (video) {
+      video.removeEventListener('play', handlePlay);
+    }
+  };
+}, [animeId, videoSrc, hasRecordedView]);
+
+
     useEffect(() => {
   if (!anime || !anime.seasons) return;
 
@@ -155,8 +216,6 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
     handleEpisodeClick(selectedEpisode);
   }
 }, [anime, episodeId, handleEpisodeClick]);
-
-
 
     // --- CÁC LOGIC RENDER GIỮ NGUYÊN ---
     if (loading) {
@@ -189,6 +248,7 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
     />
   ) : (
     <video
+      ref={videoRef}
       src={videoSrc}
       controls
       autoPlay
@@ -205,6 +265,14 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
 
                             </div>
                         </Card.Body>
+                        {/* Thông báo nếu là video YouTube */}
+{videoSrc && (videoSrc.includes('youtube.com') || videoSrc.includes('youtu.be')) && (
+  <Alert variant="info" className="mt-3">
+    Video này được phát từ YouTube nên không thể tải trực tiếp.
+  </Alert>
+)}
+
+
                     </Card>
 
                     {/* Thông tin Anime */}
@@ -250,19 +318,32 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
                                                                 <FaPlay className="me-2" />
                                                                 Tập {episode.episodeNumber}: {episode.title}
                                                             </div>
-                                                            <div>
-                                                                {/* SỬ DỤNG 'videoUrl' MỚI CHO LINK EXTERNAL */}
-                                                                {episode.videoUrl && (
-                                                                    <Button
-                                                                        variant="outline-secondary"
-                                                                        href={episode.videoUrl}
-                                                                        target="_blank"
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                    >
-                                                                        Xem thêm
-                                                                    </Button>
-                                                                )}
-                                                            </div>
+                                                            <div className="d-flex gap-2">
+  {episode.videoUrl && (
+    <Button
+      variant="outline-secondary"
+      href={episode.videoUrl}
+      target="_blank"
+      onClick={(e) => e.stopPropagation()}
+    >
+      Xem thêm
+    </Button>
+  )}
+
+
+ {isAuthenticated && selectedEpisode && videoSrc && !videoSrc.includes('youtube.com') && !videoSrc.includes('youtu.be') && (
+  <div className="mt-3 text-end">
+    <Button variant="outline-primary" onClick={handleDownloadEpisode}>
+      Tải xuống video
+    </Button>
+  </div>
+)}
+
+
+
+</div>
+
+
                                                         </ListGroup.Item>
                                                     ))}
                                                 </ListGroup>
@@ -280,5 +361,4 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
         </Container>
     );
 }
-
 export default WatchAnimePage;
