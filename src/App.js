@@ -13,6 +13,8 @@ import ResetPassword from './components/ResetPassword';
 import { AuthProvider } from './context/AuthContext';
 import HistoryPage from './pages/HistoryPage';
 import ManageEpisodesPage from './pages/ManageEpisodesPage';
+import StudioPage from './pages/StudioPage';
+
 // Thêm import cho trang "Anime xem sau"
 import WatchLaterPage from './pages/WatchLaterPage';
 
@@ -55,6 +57,8 @@ function App() {
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/watch-later" element={<WatchLaterPage />}/>
+            <Route path="/studio/:studioName" element={<StudioPage />} />
+
 
             {/* ROUTE MỚI CHO TRANG XEM PHIM */}
             <Route path="/watch/:animeId/:episodeId" element={<WatchAnimePage />} />

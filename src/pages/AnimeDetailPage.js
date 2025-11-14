@@ -5,6 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 import { Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useRef } from 'react';
+
+
 import 'react-toastify/dist/ReactToastify.css';
 
 // Thêm import icons cho chức năng theo dõi
@@ -386,7 +388,13 @@ const fetchStats = useCallback(async () => {
                         )}
                         <p className="genres mt-3">Thể loại: {anime.genres.join(', ')}</p>
                         <p>Năm phát hành: {anime.year}</p>
-                        <p>Studio: {anime.studio}</p>
+                        <p>
+  Studio:{' '}
+  <Link to={`/studio/${encodeURIComponent(anime.studio)}`}>
+    {anime.studio}
+  </Link>
+</p>
+
                         <p>Loại: {anime.animeType}</p>
                         <p className="description">{anime.desc}</p>
 
