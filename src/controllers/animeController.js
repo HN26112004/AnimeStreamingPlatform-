@@ -627,6 +627,45 @@ const getTrendingAnimes = asyncHandler(async (_req, res) => {
   }
 });
 
+// @desc    Lấy danh sách nội dung theo studio
+// @route   GET /api/anime?studio=StudioName
+// @access  Public
+const getAnimeByStudio = async (req, res) => {
+  try {
+    const studio = req.query.studio?.trim();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    // Tạo query khớp mềm theo studio
+    const query = studio
+      ? { studio: new RegExp(`^${studio}$`, 'i') }
+      : {};
+
+    // Đếm tổng số anime khớp
+    const totalAnime = await Anime.countDocuments(query);
+
+    // Truy vấn danh sách anime theo trang
+    const animeList = await Anime.find(query)
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    // Trả về kết quả
+    res.json({
+      anime: animeList,
+      page,
+      limit,
+      totalAnime,
+      totalPages: Math.ceil(totalAnime / limit),
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách theo studio:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách nội dung theo studio' });
+  }
+};
+
+
+
+
 
 
 
@@ -658,5 +697,5 @@ export {
     getTopRatedAnimes,
     getMostWatchedAnimes,
     getTrendingAnimes,
-    
+     getAnimeByStudio ,
 };

@@ -28,6 +28,7 @@ import {
     getTopRatedAnimes,
     getMostWatchedAnimes,
     getTrendingAnimes,
+    getAnimeByStudio,
 } from '../controllers/animeController.js';
 
 import { protect, admin, optionalProtect } from '../middlewares/authMiddleware.js';
@@ -40,6 +41,8 @@ router.get('/random', getRandomAnime);
 router.get('/genres', getUniqueGenres);
 router.get('/years', getUniqueYears);
 router.route('/recently-updated').get(getRecentlyUpdatedAnimes);
+router.get('/studio/:studioName', getAnimeByStudio);
+
 
 // <-- CÁC ROUTE CHO CHỨC NĂNG XẾP HẠNG  -->
 router.get('/top-rated', getTopRatedAnimes);
