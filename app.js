@@ -9,6 +9,8 @@ import userRoutes from './src/routes/userRoutes.js';
 import episodeRoutes from './src/routes/episodeRoutes.js'; 
 import statsRoutes from './src/routes/statsRoutes.js'
 import startCronJobs from './src/cronJobs.js'; 
+
+
 import path from 'path';
 import cors from 'cors';
 
@@ -30,7 +32,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/anime', animeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/episodes', episodeRoutes); // <-- Bổ sung: Sử dụng route cho tập phim
+app.use('/api/episodes', episodeRoutes); 
+
+
 
 // Phục vụ các file tĩnh từ thư mục 'uploads'
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

@@ -1,6 +1,7 @@
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
-// Bộ lọc file: chỉ cho phép video
 const videoFileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('video/')) {
     cb(null, true);
@@ -11,14 +12,23 @@ const videoFileFilter = (req, file, cb) => {
   }
 };
 
-// Dùng bộ nhớ RAM thay vì lưu vào thư mục
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = 'uploads/videos';
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueSuffix}-video${ext}`);
+  }
+});
 
 const uploadVideoMiddleware = multer({
   storage,
   fileFilter: videoFileFilter,
-  limits: { fileSize: 100 * 1024 * 1024 } // Giới hạn 100MB, bạn có thể tăng nếu cần
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
 export default uploadVideoMiddleware;
-

@@ -129,7 +129,10 @@ const getAnimeById = asyncHandler(async (req, res) => {
             });
 
         if (anime) {
-            const episodes = await Episode.find({ anime: req.params.id }).sort({ seasonNumber: 1, episodeNumber: 1 });
+            const episodes = await Episode.find({ anime: req.params.id })
+            .select('seasonNumber episodeNumber title desc videoFormats')
+            .sort({ seasonNumber: 1, episodeNumber: 1 })
+            .lean();
             
             // Tăng lượt xem khi người dùng xem chi tiết anime
             anime.viewCount = (anime.viewCount || 0) + 1;

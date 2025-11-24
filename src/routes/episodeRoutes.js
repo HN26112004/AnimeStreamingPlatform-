@@ -9,18 +9,27 @@ import {
   updateEpisode,
   deleteEpisode,
   addSeason,
-  uploadVideo,
-  downloadEpisode // ✅ thêm đúng vị trí
+  downloadEpisode
 } from '../controllers/episodeController.js';
 
-const router = express.Router(); // ✅ khai báo trước khi dùng
+import { uploadAndConvertVideo } from '../controllers/videoController.js'; // ✅ dùng controller chuẩn
+
+const router = express.Router();
 
 // Tải video có xác thực
 router.get('/:id/download', protect, downloadEpisode);
 
-// Thêm tập phim mới (có upload video)
-router.route('/').post(protect, admin, uploadVideoMiddleware.single('video'), addEpisode);
-router.post('/upload-video', protect, admin, uploadVideoMiddleware.single('video'), uploadVideo);
+// Thêm tập phim mới (chỉ JSON, không upload file ở đây)
+router.route('/').post(protect, admin, addEpisode);
+
+// ✅ Upload video cho tập phim (FormData với field "video")
+router.post(
+  '/upload-video',
+  protect,
+  admin,
+  uploadVideoMiddleware.single('video'), // phải khớp với FE append("video", ...)
+  uploadAndConvertVideo // dùng controller videoController để convert + upload Cloudinary
+);
 
 // Thêm mùa mới cho một anime
 router.route('/add-season').post(protect, admin, addSeason);
@@ -36,4 +45,3 @@ router.route('/:id').put(protect, admin, updateEpisode);
 router.route('/:id').delete(protect, admin, deleteEpisode);
 
 export default router;
-

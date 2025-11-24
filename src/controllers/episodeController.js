@@ -16,20 +16,20 @@ const uploadVideo = asyncHandler(async (req, res) => {
   const { episodeId } = req.body;
 
   if (!req.file) {
-    res.status(400);
-    throw new Error('Vui lòng chọn file video để tải lên.');
+    return res.status(400).json({ message: 'Vui lòng chọn file video để tải lên.' });
   }
+
+  const filePath = req.file.path;
+  const fileStream = fs.createReadStream(filePath);
 
   const stream = cloudinary.uploader.upload_stream(
     { resource_type: 'video' },
     async (error, result) => {
       if (error) {
         console.error('Lỗi Cloudinary:', error);
-        res.status(500).json({ error: 'Lỗi khi upload lên Cloudinary' });
-        return;
+        return res.status(500).json({ error: 'Lỗi khi upload lên Cloudinary' });
       }
 
-      // Cập nhật episode với URL CDN
       const episode = await Episode.findByIdAndUpdate(
         episodeId,
         { videoFile: result.secure_url },
@@ -44,8 +44,9 @@ const uploadVideo = asyncHandler(async (req, res) => {
     }
   );
 
-  stream.end(req.file.buffer);
+  fileStream.pipe(stream); // ✅ dùng stream từ file local
 });
+
 const downloadEpisode = asyncHandler(async (req, res) => {
   const episode = await Episode.findById(req.params.id);
   if (!episode || !episode.videoFile) {
@@ -183,40 +184,43 @@ const addEpisode = asyncHandler(async (req, res) => {
 // @route     GET /api/episodes/:animeId/all
 // @access    Public
 const getEpisodesByAnimeId = asyncHandler(async (req, res) => {
-    const { animeId } = req.params;
+  const { animeId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(animeId)) {
-        return res.status(400).json({ message: 'animeId không hợp lệ.' });
+  if (!mongoose.Types.ObjectId.isValid(animeId)) {
+    return res.status(400).json({ message: 'animeId không hợp lệ.' });
+  }
+
+  const anime = await Anime.findById(animeId).select('name').lean();
+  if (!anime) {
+    return res.status(404).json({ message: 'Không tìm thấy Anime.' });
+  }
+
+  const episodes = await Episode.find({ anime: animeId })
+    .sort({ seasonNumber: 1, episodeNumber: 1 })
+    .select('_id seasonNumber episodeNumber title desc videoUrl videoFile videoFormats') // thêm videoFormats
+    .lean();
+
+  const seasonsMap = new Map();
+  episodes.forEach(episode => {
+    const season = episode.seasonNumber || 1;
+    if (!seasonsMap.has(season)) {
+      seasonsMap.set(season, {
+        seasonNumber: season,
+        episodes: []
+      });
     }
+    seasonsMap.get(season).episodes.push(episode);
+  });
 
-    const anime = await Anime.findById(animeId).select('name').lean();
-    if (!anime) {
-        return res.status(404).json({ message: 'Không tìm thấy Anime.' });
-    }
+  const seasons = Array.from(seasonsMap.values());
 
-    const episodes = await Episode.find({ anime: animeId })
-        .sort({ seasonNumber: 1, episodeNumber: 1 })
-        .lean();
-
-    const seasonsMap = new Map();
-    episodes.forEach(episode => {
-        const season = episode.seasonNumber || 1;
-        if (!seasonsMap.has(season)) {
-            seasonsMap.set(season, {
-                seasonNumber: season,
-                episodes: []
-            });
-        }
-        seasonsMap.get(season).episodes.push(episode);
-    });
-
-    const seasons = Array.from(seasonsMap.values());
-
-    res.status(200).json({
-        animeName: anime.name,
-        seasons: seasons
-    });
+  res.status(200).json({
+    animeName: anime.name,
+    seasons: seasons
+  });
 });
+
+
 // @desc      Lấy danh sách mùa và tập theo animeId
 // @route     GET /api/episodes/by-anime/:animeId
 // @access    Public
@@ -228,6 +232,7 @@ const getEpisodesByAnime = asyncHandler(async (req, res) => {
   }
 
   const episodes = await Episode.find({ anime: animeId })
+   .select('seasonNumber episodeNumber title desc videoFormats')
     .sort({ seasonNumber: 1, episodeNumber: 1 })
     .lean();
 
