@@ -56,9 +56,7 @@ function AddAnimePage() {
 
         try {
             // 3. Gọi API chỉ để tạo Anime (Không có seasons)
-            const config = {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            };
+            const config = {};
             const { data } = await axiosInstance.post('/anime', formData, config);
             
             setSuccess('Anime đã được thêm thành công!');

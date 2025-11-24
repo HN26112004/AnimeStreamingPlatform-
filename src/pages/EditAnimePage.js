@@ -97,8 +97,7 @@ function EditAnimePage() {
             } 
             
            const config = {
-  headers: {
-    'Content-Type': 'multipart/form-data',
+  headers:{
     Authorization: `Bearer ${JSON.parse(localStorage.getItem('authData'))?.token}`
   }
 };

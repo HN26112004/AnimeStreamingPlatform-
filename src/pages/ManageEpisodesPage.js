@@ -95,11 +95,12 @@ useEffect(() => {
     const seasonNumber = seasonObj?.seasonNumber;
 
     const newEpisodeTitle = prompt(`Nhập tên Tập ${episodeNumber} (Mùa ${seasonNumber}):`);
-    if (!newEpisodeTitle || !newEpisodeTitle.trim()) return;
-
-    try {
-       const newEpisodeTitle = prompt(`Nhập tên Tập ${episodeNumber} (Mùa ${seasonNumber}):`);
 if (!newEpisodeTitle || !newEpisodeTitle.trim()) return;
+
+try {
+ 
+
+
 
 const rawVideoUrl = prompt("Nhập link YouTube (hoặc để trống nếu chưa có):");
 const normalizedVideoUrl = normalizeYouTubeUrl(rawVideoUrl?.trim() || '');
@@ -147,83 +148,127 @@ await axiosInstance.post('/episodes', {
     };
 
     const handleEpisodeInputChange = (field, value) => {
-        setIsEditingEpisode(prev => ({
-            ...prev,
-            episodeData: {
-                ...prev.episodeData,
-                [field]: value
-            }
-        }));
-    };
+  console.log("🔍 update field:", field, "value:", value);
+
+  // Nếu là file, log thêm chi tiết
+  if (value instanceof File) {
+    console.log("✅ Đây là File object:", value.name, "size:", value.size);
+  } else {
+    console.warn("⚠️ Giá trị không phải File:", value);
+  }
+
+  setIsEditingEpisode(prev => ({
+    ...prev,
+    episodeData: {
+      ...prev.episodeData,
+      [field]: value
+    }
+  }));
+};
     
     // --- VIDEO UPLOAD LOGIC ---
     const handleUploadVideo = async () => {
-    const episodeToUpdate = isEditingEpisode.episodeData;
+  const episodeToUpdate = isEditingEpisode?.episodeData;
 
-    if (!episodeToUpdate.videoFile) {
-        toast.error("Vui lòng chọn file video để tải lên.");
-        return;
-    }
+  // Kiểm tra có file hay không
+  if (!episodeToUpdate?.videoFile) {
+    toast.error("Vui lòng chọn file video để tải lên.");
+    return;
+  }
 
-    // ✅ Khai báo FormData trước khi dùng
-    const videoFormData = new FormData();
-    videoFormData.append('video', episodeToUpdate.videoFile);
+  // Kiểm tra kiểu dữ liệu
+  if (!(episodeToUpdate.videoFile instanceof File)) {
+    toast.error("File video không hợp lệ. Vui lòng chọn lại.");
+    console.error("❌ videoFile không phải File:", episodeToUpdate.videoFile);
+    return;
+  }
 
-    // ✅ Cập nhật trạng thái upload sau khi FormData đã sẵn sàng
+  // Kiểm tra có episodeId
+  if (!episodeToUpdate?._id) {
+    toast.error("Không tìm thấy episodeId. Bạn cần lưu tập phim trước khi upload video.");
+    console.error("❌ episodeId bị thiếu:", episodeToUpdate);
+    return;
+  }
+
+  // Log chi tiết trước khi gửi
+  console.log("📤 Đang gửi video lên server...");
+  console.log("📤 episodeId:", episodeToUpdate._id);
+  console.log("📤 videoFile:", episodeToUpdate.videoFile);
+  console.log("📦 typeof videoFile:", typeof episodeToUpdate.videoFile);
+  console.log("📦 instanceof File:", episodeToUpdate.videoFile instanceof File);
+
+  // Tạo FormData
+  const videoFormData = new FormData();
+  videoFormData.append("video", episodeToUpdate.videoFile); // phải khớp với BE
+  videoFormData.append("episodeId", episodeToUpdate._id);
+
+  // Cập nhật trạng thái đang upload
+  setIsEditingEpisode(prev => ({
+    ...prev,
+    episodeData: { ...prev.episodeData, isUploading: true }
+  }));
+
+  try {
+    const { data } = await axiosInstance.post("/episodes/upload-video", videoFormData, {
+      headers: { "Content-Type": "multipart/form-data" } // ép header
+    });
+
+    toast.success("Tải lên video thành công!");
+    console.log("✅ Phản hồi từ BE:", data);
+
+    fetchEpisodes(); // Tải lại danh sách tập
+
+    // Cập nhật lại episodeData với videoUrl từ Cloudinary
     setIsEditingEpisode(prev => ({
-        ...prev,
-        episodeData: { ...prev.episodeData, isUploading: true }
+      ...prev,
+      episodeData: {
+        ...prev.episodeData,
+        videoFile: null, // reset file
+        videoFormats: data.formats || {},
+        videoUrl: data.videoFile || data.filePath || "",
+        isUploading: false
+      }
     }));
-
-    try {
-        const { data } = await axiosInstance.post('/episodes/upload-video', videoFormData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        toast.success("Tải lên video thành công!");
-
-        setIsEditingEpisode(prev => ({
-            ...prev,
-            episodeData: {
-                ...prev.episodeData,
-                videoFile:  '',
-                videoPath: data.videoFile || data.filePath || '', // ✅ cập nhật đường dẫn
-                isUploading: false
-            }
-        }));
-    } catch (err) {
-        toast.error("Tải video lên thất bại. Vui lòng thử lại.");
-        setIsEditingEpisode(prev => ({
-            ...prev,
-            episodeData: { ...prev.episodeData, isUploading: false }
-        }));
-    }
+  } catch (err) {
+    console.error("❌ Lỗi upload:", err.response?.data || err.message);
+    toast.error("Tải video lên thất bại. Vui lòng thử lại.");
+    setIsEditingEpisode(prev => ({
+      ...prev,
+      episodeData: { ...prev.episodeData, isUploading: false }
+    }));
+  }
 };
 
 
     // --- EPISODE UPDATE (SAVE) LOGIC ---
    const handleSaveEpisodeUpdate = async () => {
-  const { _id, isUploading, ...rest } = isEditingEpisode.episodeData;
-  rest.videoFile = rest.videoPath || '';
+  const { _id, isUploading, videoFile, videoPath, ...rest } = isEditingEpisode.episodeData;
 
+  // Nếu có videoPath (từ upload), gán vào rest.videoFile
+  if (typeof videoPath === 'string' && videoPath.trim()) {
+    rest.videoFile = videoPath;
+  } else {
+    delete rest.videoFile; // loại bỏ field nếu không có giá trị
+  }
 
-  // Đảm bảo videoUrl hoặc videoFile có giá trị
+  // Nếu không có videoFile và không có videoUrl → báo lỗi
   if (!rest.title || !(rest.videoUrl || rest.videoFile)) {
     toast.error("Tiêu đề và ít nhất một nguồn video (link hoặc file) là bắt buộc.");
     return;
   }
 
   try {
-    // Gửi dữ liệu cập nhật lên server
     await axiosInstance.put(`/episodes/${_id}`, rest);
     toast.success("Cập nhật Tập phim thành công!");
     setIsEditingEpisode(null);
-    fetchEpisodes(); // Tải lại danh sách tập phim
+    fetchEpisodes();
   } catch (err) {
     console.error("Lỗi khi cập nhật tập phim:", err);
     toast.error("Cập nhật Tập phim thất bại.");
   }
 };
+
+
 
 
     
@@ -258,7 +303,7 @@ await axiosInstance.post('/episodes', {
                     <input
                          type="text"
                          className="form-control"
-                         value={episode.video ?? ''}
+                         value={episode.videoUrl ?? ''}
                          onChange={(e) => handleEpisodeInputChange('videoUrl', normalizeYouTubeUrl(e.target.value))}
                          required
                         />
@@ -266,24 +311,47 @@ await axiosInstance.post('/episodes', {
 
                 </div>
                 <div className="mb-3 border p-3 rounded bg-light">
-                    <label className="form-label d-block">Tải lên Video (File)</label>
-                    <input
-                        type="file"
-                        className="form-control mb-2"
-                        onChange={(e) => handleEpisodeInputChange('videoFile', e.target.files[0])}
-                    />
-                    <button
-                        type="button"
-                        className="btn btn-warning btn-sm"
-                        onClick={handleUploadVideo}
-                        disabled={episode.isUploading || !episode.videoFile}
-                    >
-                        <FaUpload className="me-1" />
-                        {episode.isUploading ? 'Đang tải...' : 'Tải lên Server'}
-                    </button>
-                    {episode.videoFile && <p className="text-muted mt-2 small">File đã chọn: {episode.videoFile.name}</p>}
-                    {episode.videoUrl && <p className="text-success mt-2">Đường dẫn hiện tại: {episode.videoUrl}</p>}
-                </div>
+  <label className="form-label d-block">Tải lên Video (File)</label>
+  <input
+    type="file"
+    accept="video/*"                 // ✅ chỉ cho phép chọn file video
+    className="form-control mb-2"
+    onChange={(e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // ✅ đảm bảo file là File object
+        handleEpisodeInputChange('videoFile', file);
+      } else {
+        // Nếu không chọn file, reset về null
+        handleEpisodeInputChange('videoFile', null);
+      }
+    }}
+  />
+  <button
+    type="button"
+    className="btn btn-warning btn-sm"
+    onClick={handleUploadVideo}
+    disabled={episode.isUploading || !(episode.videoFile instanceof File)} // ✅ chỉ enable khi có File object
+  >
+    <FaUpload className="me-1" />
+    {episode.isUploading ? 'Đang tải...' : 'Tải lên Server'}
+  </button>
+
+  {/* ✅ chỉ hiển thị tên nếu là File object */}
+  {episode.videoFile instanceof File && (
+    <p className="text-muted mt-2 small">
+      File đã chọn: {episode.videoFile.name}
+    </p>
+  )}
+
+  {episode.videoUrl && (
+    <p className="text-success mt-2">
+      Đường dẫn hiện tại: {episode.videoUrl}
+    </p>
+  )}
+</div>
+
+
                 <div className="mb-3">
                     <label className="form-label">Mô tả Tập (Tùy chọn)</label>
                     <textarea
@@ -369,7 +437,7 @@ await axiosInstance.post('/episodes', {
             <span>
               <strong>Tập {episode.episodeNumber}</strong> – {episode.title}
               <small className="ms-3 text-muted">
-                ({episode.video ? 'Đã có video' : 'Chưa có video'})
+                ({episode.videoUrl ? 'Đã có video' : 'Chưa có video'})
               </small>
             </span>
             <div>

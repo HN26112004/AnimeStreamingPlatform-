@@ -43,6 +43,10 @@ function WatchAnimePage() {
     const [error, setError] = useState(null);
     const { animeId, episodeId } = useParams(); 
     const videoRef = useRef(null);
+    const [selectedFormat, setSelectedFormat] = useState('hls');
+const [availableFormats, setAvailableFormats] = useState(null);
+
+
 const [hasRecordedView, setHasRecordedView] = useState(false);
 const [selectedEpisode, setSelectedEpisode] = useState(null);
 
@@ -52,29 +56,44 @@ const [selectedEpisode, setSelectedEpisode] = useState(null);
 
     // HÀM XỬ LÝ KHI CHỌN TẬP PHIM
     const handleEpisodeClick = useCallback(async (episode) => {
-      
   const normalizeYouTubeUrl = (url) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^\s&]+)/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : url;
   };
 
+  setSelectedEpisode(episode);
 
+  if (episode.videoFormats) {
+    setAvailableFormats(episode.videoFormats);
 
-  const videoSource = episode.videoFile
-  ? episode.videoFile.startsWith('http')
-    ? episode.videoFile
-    : `http://localhost:5000${episode.videoFile}`
-  : normalizeYouTubeUrl(episode.videoUrl);
+    const defaultFormat = episode.videoFormats.hls
+      ? 'hls'
+      : episode.videoFormats.webm
+      ? 'webm'
+      : 'mp4';
 
+    setSelectedFormat(defaultFormat);
+    
+    setVideoSrc(episode.videoFormats[defaultFormat]);
+  } else {
+    const videoSource = episode.videoFile
+      ? episode.videoFile.startsWith('http')
+        ? episode.videoFile
+        : `${episode.videoFile}` // ví dụ: "/uploads/videos/xxx.webm"
+      : normalizeYouTubeUrl(episode.videoUrl);
 
+    if (!videoSource) {
+      toast.error("Tập phim này chưa có video nguồn!");
+      setVideoSrc(null);
+      return;
+    }
 
-  if (!videoSource) {
-    toast.error("Tập phim này chưa có video nguồn!");
-    setVideoSrc(null);
-    return;
+    setAvailableFormats(null);
+    setSelectedFormat(null);
+    setVideoSrc(videoSource);
   }
-  setVideoSrc(videoSource);
-setSelectedEpisode(episode);
+
+  // Ghi lịch sử xem
   if (anime) {
     if (isAuthenticated) {
       try {
@@ -235,6 +254,24 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
                     <Card>
                         <Card.Header as="h2">{anime.name}</Card.Header>
                         <Card.Body>
+                          {availableFormats && Object.keys(availableFormats).length > 0 && (
+  <div className="mb-3 d-flex gap-2">
+    {Object.keys(availableFormats).map((format) => (
+      <Button
+        key={format}
+        variant={selectedFormat === format ? 'primary' : 'outline-secondary'}
+        onClick={() => {
+          setSelectedFormat(format);
+          setVideoSrc(availableFormats[format]);
+        }}
+      >
+        {format.toUpperCase()}
+      </Button>
+    ))}
+  </div>
+)}
+
+
                             <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
                                 {videoSrc ? (
   videoSrc.includes('youtube.com') || videoSrc.includes('youtu.be') ? (
@@ -310,7 +347,7 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
                                                         .map((episode) => (
                                                         <ListGroup.Item
                                                             key={episode._id} 
-                                                            action 
+                                                            as="div"
                                                             onClick={() => handleEpisodeClick(episode)}
                                                             className="d-flex justify-content-between align-items-center"
                                                         >
