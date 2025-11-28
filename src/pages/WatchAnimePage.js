@@ -45,6 +45,7 @@ function WatchAnimePage() {
     const videoRef = useRef(null);
     const [selectedFormat, setSelectedFormat] = useState('hls');
 const [availableFormats, setAvailableFormats] = useState(null);
+const [isReporting, setIsReporting] = useState(false);
 
 
 const [hasRecordedView, setHasRecordedView] = useState(false);
@@ -55,7 +56,7 @@ const [selectedEpisode, setSelectedEpisode] = useState(null);
  
 
     // HÀM XỬ LÝ KHI CHỌN TẬP PHIM
-    const handleEpisodeClick = useCallback(async (episode) => {
+   const handleEpisodeClick = useCallback(async (episode) => {
   const normalizeYouTubeUrl = (url) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^\s&]+)/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : url;
@@ -63,23 +64,34 @@ const [selectedEpisode, setSelectedEpisode] = useState(null);
 
   setSelectedEpisode(episode);
 
-  if (episode.videoFormats) {
+  if (episode.videoFormats && Object.keys(episode.videoFormats).length > 0) {
     setAvailableFormats(episode.videoFormats);
 
     const defaultFormat = episode.videoFormats.hls
       ? 'hls'
       : episode.videoFormats.webm
       ? 'webm'
-      : 'mp4';
+      : episode.videoFormats.mp4
+      ? 'mp4'
+      : null;
 
-    setSelectedFormat(defaultFormat);
-    
-    setVideoSrc(episode.videoFormats[defaultFormat]);
+    if (defaultFormat) {
+      setSelectedFormat(defaultFormat);
+      const src = episode.videoFormats[defaultFormat];
+      const normalizedSrc = src.startsWith('/') ? src : `/${src}`;
+      setVideoSrc(normalizedSrc);
+    } else {
+      toast.error("Không tìm thấy định dạng video hợp lệ!");
+      setVideoSrc(null);
+    }
+
   } else {
     const videoSource = episode.videoFile
       ? episode.videoFile.startsWith('http')
         ? episode.videoFile
-        : `${episode.videoFile}` // ví dụ: "/uploads/videos/xxx.webm"
+        : episode.videoFile.startsWith('/')
+          ? episode.videoFile
+          : `/${episode.videoFile}`
       : normalizeYouTubeUrl(episode.videoUrl);
 
     if (!videoSource) {
@@ -108,6 +120,30 @@ const [selectedEpisode, setSelectedEpisode] = useState(null);
     }
   }
 }, [anime, isAuthenticated]);
+
+
+const handleReportError = async () => {
+  if (isReporting) return;
+
+  try {
+    setIsReporting(true);
+    const token = JSON.parse(localStorage.getItem('authData'))?.token;
+
+    await axiosInstance.post('/api/report-error', {
+      animeId: anime._id,
+      episodeId: selectedEpisode?._id
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // Vô hiệu hóa nút trong 60 giây
+    setTimeout(() => setIsReporting(false), 60000);
+  } catch (err) {
+    console.error("Lỗi khi gửi báo lỗi:", err);
+    setIsReporting(false);
+  }
+};
+
 
 const handleDownloadEpisode = async () => {
   if (!selectedEpisode) {
@@ -308,6 +344,18 @@ const seasonsMap = allEpisodes.reduce((acc, episode) => {
     Video này được phát từ YouTube nên không thể tải trực tiếp.
   </Alert>
 )}
+{videoSrc && selectedEpisode && (
+  <div className="mt-3 text-end">
+    <Button
+      variant="danger"
+      disabled={isReporting}
+      onClick={handleReportError}
+    >
+      {isReporting ? 'Đã gửi báo lỗi' : 'Báo lỗi'}
+    </Button>
+  </div>
+)}
+
 
 
                     </Card>

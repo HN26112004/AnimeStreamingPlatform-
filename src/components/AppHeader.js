@@ -94,12 +94,21 @@ const AppHeader = () => {
           {isAuthenticated ? (
             <>
               {user?.role === 'admin' && (
-                <li style={{ marginRight: '15px' }}>
-                  <Link to="/admin/add-anime" style={{ color: '#ffcc00', textDecoration: 'none' }}>
-                    Thêm Anime
-                  </Link>
-                </li>
-              )}
+  <>
+    <li style={{ marginRight: '15px' }}>
+      <Link to="/admin/add-anime" style={{ color: '#ffcc00', textDecoration: 'none' }}>
+        Thêm Anime
+      </Link>
+    </li>
+    <li style={{ marginRight: '15px' }}>
+      <Link to="/admin/dashboard" style={{ color: '#00ff99', textDecoration: 'none' }}>
+        Dashboard
+      </Link>
+    </li>
+  </>
+)}
+
+
               <li style={{ marginRight: '15px' }}>
                 <span style={{ color: '#00ccff' }}>Chào mừng, {user?.username}</span>
               </li>

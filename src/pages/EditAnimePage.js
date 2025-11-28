@@ -87,7 +87,9 @@ function EditAnimePage() {
             formData.append('animeType', animeType); 
             
             const genresArray = genres.split(',').map(genre => genre.trim());
-            formData.append('genres', JSON.stringify(genresArray));
+            genresArray.forEach(g => formData.append('genres', g));
+
+
 
             if (imageFile) {
                 formData.append('image', imageFile);

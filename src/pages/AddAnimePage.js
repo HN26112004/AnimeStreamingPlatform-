@@ -46,8 +46,8 @@ function AddAnimePage() {
         formData.append('animeType', animeType);
 
         // 2. Xử lý Genres và Files
-        const genresArray = genres.split(',').map(genre => genre.trim());
-        formData.append('genres', JSON.stringify(genresArray)); 
+       const genresArray = genres.split(',').map(genre => genre.trim());
+genresArray.forEach(g => formData.append('genres', g));
         
         formData.append('image', image);
         if (titleImage) {
