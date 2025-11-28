@@ -23,6 +23,15 @@ const createAnime = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error('Bộ anime với tên này đã tồn tại.');
     }
+    let parsedGenres = genres;
+if (typeof genres === 'string') {
+  try {
+    parsedGenres = JSON.parse(genres);
+  } catch (err) {
+    parsedGenres = [genres]; // fallback: nếu chỉ là một chuỗi đơn
+  }
+}
+
 
     const anime = await Anime.create({
         user: _id,
@@ -30,7 +39,7 @@ const createAnime = asyncHandler(async (req, res) => {
         desc,
         image: imagePath,
         titleImage,
-        genres,
+        genres: parsedGenres,
         language,
         year,
         studio,

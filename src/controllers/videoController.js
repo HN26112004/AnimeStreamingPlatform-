@@ -92,8 +92,9 @@ export const uploadAndConvertVideo = async (req, res) => {
       episodeId,
       {
         $set: {
-          videoFile: cloudResult.secure_url,
-          videoFormats: formats
+          videoFile: formats.webm,
+          videoFormats: formats,
+          cloudVideoUrl: cloudResult.secure_url
         }
       },
       { new: true }
@@ -103,9 +104,12 @@ export const uploadAndConvertVideo = async (req, res) => {
 
     res.json({
       message: 'Chuyển đổi và lưu video thành công.',
-      episodeId: updatedEpisode._id,
-      videoFile: cloudResult.secure_url,
-      formats: updatedEpisode.videoFormats
+       episodeId: updatedEpisode._id,
+  videoFile: updatedEpisode.videoFile,   // dùng giá trị đã lưu trong DB
+  formats: updatedEpisode.videoFormats,
+  cloudVideoUrl: updatedEpisode.cloudVideoUrl
+
+
     });
   } catch (err) {
     console.error(' Lỗi Cloudinary:', err);

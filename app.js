@@ -9,6 +9,10 @@ import userRoutes from './src/routes/userRoutes.js';
 import episodeRoutes from './src/routes/episodeRoutes.js'; 
 import statsRoutes from './src/routes/statsRoutes.js'
 import startCronJobs from './src/cronJobs.js'; 
+import adminRoutes from './src/routes/adminRoutes.js';
+import reportRoutes from './src/routes/reportRoutes.js';
+
+
 
 
 import path from 'path';
@@ -33,6 +37,9 @@ app.use('/api/anime', animeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/episodes', episodeRoutes); 
+app.use('/api/admin', adminRoutes);
+app.use('/api', reportRoutes);
+
 
 
 
