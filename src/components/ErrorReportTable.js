@@ -35,7 +35,7 @@ function ErrorReportTable() {
         <thead>
           <tr>
             <th>Người dùng</th>
-            <th>Nội dung</th>
+            
             <th>Tập</th>
             <th>Thời gian</th>
           </tr>
@@ -45,8 +45,12 @@ function ErrorReportTable() {
             reports.map((r) => (
               <tr key={r._id}>
                 <td>{r.user?.username || 'Ẩn danh'}</td>
-                <td>{r.anime?.name || 'Không rõ'}</td>
-                <td>{r.episode ? `Tập ${r.episode.episodeNumber}: ${r.episode.title}` : 'Không rõ'}</td>
+               
+                <td>
+  {r.episode?.episodeNumber
+    ? `Tập ${r.episode.episodeNumber}: ${r.anime?.name || 'Không rõ'}`
+    : r.anime?.name || 'Không rõ'}
+</td>
                 <td>{new Date(r.createdAt).toLocaleString()}</td>
               </tr>
             ))

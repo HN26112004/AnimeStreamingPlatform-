@@ -7,28 +7,26 @@ const axiosInstance = axios.create({
   },
 });
 
+// Interceptor để tự động gắn token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const authDataString = localStorage.getItem('authData');
-
-    if (authDataString) {
-      try {
+    try {
+      const authDataString = localStorage.getItem('authData');
+      if (authDataString) {
         const authData = JSON.parse(authDataString);
         const token = authData?.token;
 
         if (token && typeof token === 'string' && token.trim() !== '') {
           config.headers.Authorization = `Bearer ${token}`;
         }
-      } catch (e) {
-        console.error('Lỗi khi parse JSON từ localStorage. Đã xóa dữ liệu lỗi.', e);
-        localStorage.removeItem('authData');
       }
+    } catch (e) {
+      console.error('Lỗi khi parse JSON từ localStorage:', e);
+      localStorage.removeItem('authData');
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 export default axiosInstance;
-

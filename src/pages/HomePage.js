@@ -346,38 +346,98 @@ function HomePage() {
             {animeList.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                     {animeList.map((anime) => (
-                        <div key={anime._id} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '15px', textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-                            {anime.image && (
-                                <img
-                                    src={`http://localhost:5000${anime.image}`}
-                                    alt={anime.name}
-                                    style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px', marginBottom: '10px' }}
-                                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/200x300/CCCCCC/333333?text=No+Image"; }}
-                                />
-                            )}
-                            <h2 style={{ fontSize: '1.2em', margin: '10px 0' }}>{anime.name} ({anime.year})</h2>
-                            <p style={{ fontSize: '0.9em', color: '#555' }}>Thể loại: {anime.genres.join(', ')}</p>
-                            <p style={{ fontSize: '0.9em', color: '#555' }}>Dạng: {anime.type}</p>
-                            <p style={{ fontSize: '0.9em', color: '#555' }}>Studio: {anime.studio}</p>
-                            
-                            {/* THÊM CÁC NÚT SỬA VÀ XOÁ NẾU NGƯỜI DÙNG LÀ ADMIN */}
-                            <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                                <Link to={`/anime/${anime._id}`} style={{ display: 'inline-block', padding: '8px 15px', backgroundColor: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-                                    Xem chi tiết
-                                </Link>
-                                {user && user.isAdmin && (
-                                    <>
-                                        <Link to={`/admin/edit-anime/${anime._id}`} style={{ display: 'inline-block', padding: '8px 15px', backgroundColor: '#ffc107', color: 'white', textDecoration: 'none', borderRadius: '5px' }}>
-                                            Sửa
-                                        </Link>
-                                        <button onClick={() => handleDeleteAnime(anime._id)} style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                                            Xoá
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+  <div 
+    key={anime._id} 
+    style={{ 
+      border: '1px solid #eee', 
+      borderRadius: '8px', 
+      padding: '15px', 
+      textAlign: 'center', 
+      boxShadow: '0 4px 8px rgba(0,0,0,0.05)', 
+      display: 'flex', 
+      flexDirection: 'column' 
+    }}
+  >
+    {anime.image && (
+      <img
+        src={`http://localhost:5000${anime.image}`}
+        alt={anime.name}
+        style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px', marginBottom: '10px' }}
+        onError={(e) => { 
+          e.target.onerror = null; 
+          e.target.src = "https://placehold.co/200x300/CCCCCC/333333?text=No+Image"; 
+        }}
+      />
+    )}
+    <h2 style={{ fontSize: '1.2em', margin: '10px 0' }}>
+      {anime.name} ({anime.year})
+    </h2>
+    <p style={{ fontSize: '0.9em', color: '#555' }}>Thể loại: {anime.genres.join(', ')}</p>
+    <p style={{ fontSize: '0.9em', color: '#555' }}>Dạng: {anime.type}</p>
+    <p style={{ fontSize: '0.9em', color: '#555' }}>Studio: {anime.studio}</p>
+
+    {/* ✅ Thêm tổng lượt xem */}
+    <p style={{ fontSize: '0.9em', color: '#555' }}>
+      👁️ Tổng lượt xem: {anime.totalViews?.toLocaleString() || 0}
+    </p>
+
+    {/* Nút hành động */}
+    <div 
+      style={{ 
+        marginTop: 'auto', 
+        paddingTop: '10px', 
+        borderTop: '1px solid #eee', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: '10px' 
+      }}
+    >
+      <Link 
+        to={`/anime/${anime._id}`} 
+        style={{ 
+          display: 'inline-block', 
+          padding: '8px 15px', 
+          backgroundColor: '#007bff', 
+          color: 'white', 
+          textDecoration: 'none', 
+          borderRadius: '5px' 
+        }}
+      >
+        Xem chi tiết
+      </Link>
+      {user && user.isAdmin && (
+        <>
+          <Link 
+            to={`/admin/edit-anime/${anime._id}`} 
+            style={{ 
+              display: 'inline-block', 
+              padding: '8px 15px', 
+              backgroundColor: '#ffc107', 
+              color: 'white', 
+              textDecoration: 'none', 
+              borderRadius: '5px' 
+            }}
+          >
+            Sửa
+          </Link>
+          <button 
+            onClick={() => handleDeleteAnime(anime._id)} 
+            style={{ 
+              padding: '8px 15px', 
+              backgroundColor: '#dc3545', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px', 
+              cursor: 'pointer' 
+            }}
+          >
+            Xoá
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+))}
                 </div>
             ) : (
                 <p style={{ textAlign: 'center' }}>Không tìm thấy anime nào phù hợp với tiêu chí của bạn.</p>

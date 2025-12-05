@@ -210,27 +210,55 @@ function AnimeList() {
                     gap: '20px',
                     padding: '20px 0'
                 }}>
-                    {animes.length > 0 ? (
-                        animes.map(anime => (
-                            <Link to={`/anime/${anime._id}`} key={anime._id} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', transition: 'transform 0.2s', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                                    <img
-                                        src={`http://localhost:5000${anime.image}`}
-                                        alt={anime.name}
-                                        style={{ width: '100%', height: '350px', objectFit: 'cover' }}
-                                        onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/250x350/CCCCCC/333333?text=No+Image"; }}
-                                    />
-                                    <div style={{ padding: '15px' }}>
-                                        <h2 style={{ fontSize: '1.2em', margin: '0 0 5px', color: '#333' }}>{anime.name}</h2>
-                                        <p style={{ margin: '0', color: '#666' }}>({anime.year})</p>
-                                        <p style={{ margin: '0', color: '#666' }}>Thể loại: {anime.genres.join(', ')}</p>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))
-                    ) : (
-                        <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Không tìm thấy anime nào.</p>
-                    )}
+                   {animes.length > 0 ? (
+  animes.map(anime => (
+    <Link to={`/anime/${anime._id}`} key={anime._id} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <div style={{
+        position: 'relative',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        transition: 'transform 0.2s',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+      }}>
+        <img
+          src={`http://localhost:5000${anime.image}`}
+          alt={anime.name}
+          style={{ width: '100%', height: '350px', objectFit: 'cover', display: 'block' }}
+          onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/250x350/CCCCCC/333333?text=No+Image"; }}
+        />
+
+        {/* Overlay ⭐ rating + 📺 tập mới nhất */}
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          color: '#fff',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          zIndex: 2
+        }}>
+          <span>⭐ {(anime.rate ?? anime.rating ?? 'N/A')}</span>
+          <span>📺 TẬP {(anime.latestEpisode ?? '??')}</span>
+        </div>
+
+        <div style={{ padding: '15px' }}>
+          <h2 style={{ fontSize: '1.2em', margin: '0 0 5px', color: '#333' }}>{anime.name}</h2>
+          <p style={{ margin: '0', color: '#666' }}>({anime.year})</p>
+          <p style={{ margin: '0', color: '#666' }}>Thể loại: {Array.isArray(anime.genres) ? anime.genres.join(', ') : anime.genres}</p>
+        </div>
+      </div>
+    </Link>
+  ))
+) : (
+  <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Không tìm thấy anime nào.</p>
+)}
                 </div>
             )}
         </div>

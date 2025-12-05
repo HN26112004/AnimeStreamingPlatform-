@@ -99,10 +99,13 @@ function EditAnimePage() {
             } 
             
            const config = {
-  headers:{
-    Authorization: `Bearer ${JSON.parse(localStorage.getItem('authData'))?.token}`
+  headers: {
+    Authorization: `Bearer ${JSON.parse(localStorage.getItem('authData'))?.token}`,
+    'Content-Type': 'multipart/form-data'
   }
 };
+
+
 
 
 

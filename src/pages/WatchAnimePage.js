@@ -129,7 +129,7 @@ const handleReportError = async () => {
     setIsReporting(true);
     const token = JSON.parse(localStorage.getItem('authData'))?.token;
 
-    await axiosInstance.post('/api/report-error', {
+    await axiosInstance.post('/report-error', {
       animeId: anime._id,
       episodeId: selectedEpisode?._id
     }, {

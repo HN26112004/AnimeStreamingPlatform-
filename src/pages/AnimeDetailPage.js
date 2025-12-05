@@ -245,23 +245,29 @@ const fetchStats = useCallback(async () => {
 
 
     const handleRatingSubmit = async (ratingValue) => {
-        if (!user) {
-            toast.warn('Vui lòng đăng nhập để đánh giá!');
-            return;
-        }
-        try {
-            const { data } = await axiosInstance.post(`/anime/${id}/rating`, {
-                rating: ratingValue,
-                review: userReview
-            });
-            setUserRating(data.rating);
-            setCurrentReview(data.review);
-            toast.success('Đánh giá của bạn đã được lưu thành công!');
-        } catch (err) {
-            console.error(err.response?.data?.message || 'Có lỗi xảy ra khi lưu đánh giá.');
-            toast.error(err.response?.data?.message || 'Lỗi khi lưu đánh giá.');
-        }
+  if (!user) {
+    toast.warn('Vui lòng đăng nhập để đánh giá!');
+    return;
+  }
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${JSON.parse(localStorage.getItem('authData'))?.token}`,
+        'Content-Type': 'application/json'
+      }
     };
+
+    const { data } = await axiosInstance.post(`/anime/${id}/rating`, {
+      rating: Number(ratingValue)
+    }, config);
+
+    setUserRating(data.newAverageRating); // backend trả về newAverageRating
+    toast.success('Đánh giá của bạn đã được lưu thành công!');
+  } catch (err) {
+    console.error(err.response?.data?.message || 'Có lỗi xảy ra khi lưu đánh giá.');
+    toast.error(err.response?.data?.message || 'Lỗi khi lưu đánh giá.');
+  }
+};
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
@@ -315,7 +321,9 @@ const fetchStats = useCallback(async () => {
   if (seasonNumbers.length > 0) {
     const firstSeason = groupedEpisodes[seasonNumbers[0]];
     if (Array.isArray(firstSeason) && firstSeason.length > 0) {
-      const sortedEpisodes = [...firstSeason].sort((a, b) => a.episodeNumber - b.episodeNumber);
+      const sortedEpisodes = [...firstSeason]
+        .filter(ep => ep.episodeNumber >= 1) // bỏ tập số 0 nếu còn
+        .sort((a, b) => a.episodeNumber - b.episodeNumber);
       return sortedEpisodes[0];
     }
   }
@@ -386,8 +394,29 @@ const fetchStats = useCallback(async () => {
                                 <Button className="mt-2" onClick={() => handleRatingSubmit(userRating)}>Lưu</Button>
                             </div>
                         )}
-                        <p className="genres mt-3">Thể loại: {anime.genres.join(', ')}</p>
-                        <p>Năm phát hành: {anime.year}</p>
+                        <p className="genres mt-3">
+  Thể loại:{' '}
+  {anime.genres.map((genre, i) => (
+    <Link 
+      key={i} 
+      to={`/anime/genre/${encodeURIComponent(genre)}`} 
+      style={{ marginRight: '8px', color: '#007bff', textDecoration: 'underline' }}
+    >
+      {genre}
+    </Link>
+  ))}
+</p>
+
+
+                        <p>
+  Năm phát hành:{' '}
+  <Link 
+    to={`/anime/year/${anime.year}`} 
+    style={{ color: '#007bff', textDecoration: 'underline' }}
+  >
+    {anime.year}
+  </Link>
+</p>
                         <p>
   Studio:{' '}
   <Link to={`/studio/${encodeURIComponent(anime.studio)}`}>
@@ -395,7 +424,15 @@ const fetchStats = useCallback(async () => {
   </Link>
 </p>
 
-                        <p>Loại: {anime.animeType}</p>
+                        <p>
+  Loại:{' '}
+  <Link 
+    to={`/anime/type/${encodeURIComponent(anime.animeType)}`} 
+    style={{ color: '#007bff', textDecoration: 'underline' }}
+  >
+    {anime.animeType}
+  </Link>
+</p>
                         <p className="description">{anime.desc}</p>
 
                         {/* CẬP NHẬT NÚT "XEM NGAY" */}
