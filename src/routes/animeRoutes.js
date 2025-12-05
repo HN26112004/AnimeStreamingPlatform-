@@ -29,6 +29,10 @@ import {
     getMostWatchedAnimes,
     getTrendingAnimes,
     getAnimeByStudio,
+    getAnimeByGenre,
+  getAnimeByYear,
+  getAnimeByType,
+
 } from '../controllers/animeController.js';
 
 import { protect, admin, optionalProtect } from '../middlewares/authMiddleware.js';
@@ -42,7 +46,9 @@ router.get('/genres', getUniqueGenres);
 router.get('/years', getUniqueYears);
 router.route('/recently-updated').get(getRecentlyUpdatedAnimes);
 router.get('/studio/:studioName', getAnimeByStudio);
-
+router.get('/genre', getAnimeByGenre);
+router.get('/year', getAnimeByYear);
+router.get('/type', getAnimeByType);
 
 // <-- CÁC ROUTE CHO CHỨC NĂNG XẾP HẠNG  -->
 router.get('/top-rated', getTopRatedAnimes);
@@ -58,7 +64,10 @@ router.route('/watch-history').get(protect, getWatchHistory);
 router.route('/watch-history/clear').delete(protect, clearWatchHistory);
 router.post('/:id/comments', protect, createAnimeComment);
 router.post('/:id/rating', protect, createAnimeRating);
-router.put('/:id', protect, admin, upload.single('image'), updateAnime);
+router.put('/:id', protect, admin, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'titleImage', maxCount: 1 }
+]), updateAnime);
 router.delete('/:id', protect, admin, deleteAnime);
 
 
@@ -79,7 +88,10 @@ router.get('/:id/related', getRelatedAnimes);
 
 
 // --- Các route chung chung cần đặt xuống cuối cùng ---
-router.post('/', protect, admin, upload.single('image'), createAnime);
+router.post('/', protect, admin, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'titleImage', maxCount: 1 }
+]), createAnime);
 router.get('/', getAnime);
 router.get('/:id', getAnimeById);
 

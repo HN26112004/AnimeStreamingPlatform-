@@ -13,55 +13,62 @@ const animeCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 // @route     POST /api/anime
 // @access    Private/Admin
 const createAnime = asyncHandler(async (req, res) => {
-    const { _id } = req.user;
-    const { name, desc, titleImage, genres, language, year, studio, animeType } = req.body;
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : req.body.image;
+  const { _id } = req.user;
+  const { name, desc, genres, language, year, studio, animeType } = req.body;
 
-    const animeExists = await Anime.findOne({ name });
+  // Lấy đường dẫn từ multer nếu có file upload
+  const imagePath = req.files?.image 
+    ? `/uploads/${req.files.image[0].filename}` 
+    : req.body.image;
 
-    if (animeExists) {
-        res.status(400);
-        throw new Error('Bộ anime với tên này đã tồn tại.');
-    }
-    let parsedGenres = genres;
-if (typeof genres === 'string') {
-  try {
-    parsedGenres = JSON.parse(genres);
-  } catch (err) {
-    parsedGenres = [genres]; // fallback: nếu chỉ là một chuỗi đơn
+  const titleImagePath = req.files?.titleImage 
+    ? `/uploads/${req.files.titleImage[0].filename}` 
+    : req.body.titleImage;
+
+  const animeExists = await Anime.findOne({ name });
+  if (animeExists) {
+    res.status(400);
+    throw new Error('Bộ anime với tên này đã tồn tại.');
   }
-}
 
-
-    const anime = await Anime.create({
-        user: _id,
-        name,
-        desc,
-        image: imagePath,
-        titleImage,
-        genres: parsedGenres,
-        language,
-        year,
-        studio,
-        animeType,
-        latestEpisode: 0,
-    });
-
-    if (anime) {
-        res.status(201).json({
-            message: 'Bộ anime đã được tạo thành công.',
-            anime: {
-                _id: anime._id,
-                name: anime.name,
-                image: anime.image,
-                animeType: anime.animeType,
-                latestEpisode: anime.latestEpisode,
-            }
-        });
-    } else {
-        res.status(400);
-        throw new Error('Dữ liệu anime không hợp lệ.');
+  let parsedGenres = genres;
+  if (typeof genres === 'string') {
+    try {
+      parsedGenres = JSON.parse(genres);
+    } catch (err) {
+      parsedGenres = [genres]; // fallback: nếu chỉ là một chuỗi đơn
     }
+  }
+
+  const anime = await Anime.create({
+    user: _id,
+    name,
+    desc,
+    image: imagePath,
+    titleImage: titleImagePath,
+    genres: parsedGenres,
+    language,
+    year,
+    studio,
+    animeType,
+    latestEpisode: 0,
+  });
+
+  if (anime) {
+    res.status(201).json({
+      message: 'Bộ anime đã được tạo thành công.',
+      anime: {
+        _id: anime._id,
+        name: anime.name,
+        image: anime.image,
+        animeType: anime.animeType,
+        latestEpisode: anime.latestEpisode,
+      }
+    });
+  } else {
+    res.status(400);
+    throw new Error('Dữ liệu anime không hợp lệ.');
+  }
 });
 
 // @desc      Lấy tất cả các bộ anime với phân trang, lọc và tìm kiếm (có cache)
@@ -144,8 +151,8 @@ const getAnimeById = asyncHandler(async (req, res) => {
             .lean();
             
             // Tăng lượt xem khi người dùng xem chi tiết anime
-            anime.viewCount = (anime.viewCount || 0) + 1;
-            anime.dailyViewCount = (anime.dailyViewCount || 0) + 1;
+            anime.totalViews = (anime.totalViews || 0) + 1;
+            anime.viewsToday = (anime.viewsToday || 0) + 1;
             await anime.save();
 
             const animeWithEpisodes = {
@@ -171,32 +178,40 @@ const getAnimeById = asyncHandler(async (req, res) => {
 // @route     PUT /api/anime/:id
 // @access    Private/Admin
 const updateAnime = asyncHandler(async (req, res) => {
-    const { name, desc, titleImage, genres, language, year, studio, animeType } = req.body;
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : req.body.image;
+  const { name, desc, genres, language, year, studio, animeType } = req.body;
 
-    const anime = await Anime.findById(req.params.id);
+  // Lấy đường dẫn từ multer nếu có file upload
+  const imagePath = req.files?.image 
+    ? `/uploads/${req.files.image[0].filename}` 
+    : req.body.image;
 
-    if (anime) {
-        anime.name = name || anime.name;
-        anime.desc = desc || anime.desc;
-        anime.image = imagePath || anime.image;
-        anime.titleImage = titleImage || anime.titleImage;
-        anime.genres = genres || anime.genres;
-        anime.language = language || anime.language;
-        anime.year = year || anime.year;
-        anime.studio = studio || anime.studio;
-        anime.animeType = animeType || anime.animeType;
+  const titleImagePath = req.files?.titleImage 
+    ? `/uploads/${req.files.titleImage[0].filename}` 
+    : req.body.titleImage;
 
-        const updatedAnime = await anime.save();
+  const anime = await Anime.findById(req.params.id);
 
-        res.json({
-            message: 'Bộ anime đã được cập nhật thành công.',
-            anime: updatedAnime
-        });
-    } else {
-        res.status(404);
-        throw new Error('Không tìm thấy bộ anime để cập nhật.');
-    }
+  if (anime) {
+    anime.name = name || anime.name;
+    anime.desc = desc || anime.desc;
+    anime.image = imagePath || anime.image;
+    anime.titleImage = titleImagePath || anime.titleImage;
+    anime.genres = genres || anime.genres;
+    anime.language = language || anime.language;
+    anime.year = year || anime.year;
+    anime.studio = studio || anime.studio;
+    anime.animeType = animeType || anime.animeType;
+
+    const updatedAnime = await anime.save();
+
+    res.json({
+      message: 'Bộ anime đã được cập nhật thành công.',
+      anime: updatedAnime
+    });
+  } else {
+    res.status(404);
+    throw new Error('Không tìm thấy bộ anime để cập nhật.');
+  }
 });
 
 // @desc      Xóa một bộ anime
@@ -675,8 +690,95 @@ const getAnimeByStudio = async (req, res) => {
   }
 };
 
+// @desc    Lấy danh sách anime theo thể loại
+// @route   GET /api/anime/genre
+// @access  Public
+const getAnimeByGenre = async (req, res) => {
+  try {
+    const genre = req.query.genre?.trim();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
 
+    const query = genre ? { genres: new RegExp(`^${genre}$`, 'i') } : {};
 
+    const totalAnime = await Anime.countDocuments(query);
+
+    const animeList = await Anime.find(query)
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    res.json({
+      anime: animeList,
+      page,
+      limit,
+      totalAnime,
+      totalPages: Math.ceil(totalAnime / limit),
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách theo thể loại:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách theo thể loại' });
+  }
+};
+
+// @desc    Lấy danh sách anime theo năm phát hành
+// @route   GET /api/anime/year
+// @access  Public
+const getAnimeByYear = async (req, res) => {
+  try {
+    const year = parseInt(req.query.year);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const query = year ? { year } : {};
+
+    const totalAnime = await Anime.countDocuments(query);
+
+    const animeList = await Anime.find(query)
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    res.json({
+      anime: animeList,
+      page,
+      limit,
+      totalAnime,
+      totalPages: Math.ceil(totalAnime / limit),
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách theo năm:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách theo năm' });
+  }
+};
+
+// @desc    Lấy danh sách anime theo loại
+// @route   GET /api/anime/type
+// @access  Public
+const getAnimeByType = async (req, res) => {
+  try {
+    const typeName = req.query.type?.trim();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const query = typeName ? { animeType: new RegExp(`^${typeName}$`, 'i') } : {};
+
+    const totalAnime = await Anime.countDocuments(query);
+
+    const animeList = await Anime.find(query)
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    res.json({
+      anime: animeList,
+      page,
+      limit,
+      totalAnime,
+      totalPages: Math.ceil(totalAnime / limit),
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách theo loại:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách theo loại' });
+  }
+};
 
 
 
@@ -710,4 +812,7 @@ export {
     getMostWatchedAnimes,
     getTrendingAnimes,
      getAnimeByStudio ,
+     getAnimeByGenre,
+     getAnimeByYear,
+     getAnimeByType,
 };

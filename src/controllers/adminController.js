@@ -6,7 +6,7 @@ import Report from '../models/Report.js';
 export const getErrorReports = async (req, res) => {
   try {
     const reports = await Report.find()
-      .populate('anime', 'title')
+      .populate('anime', 'name')
       .populate('episode', 'episodeNumber')
       .populate('user', 'username')
       .sort({ createdAt: -1 });
@@ -17,29 +17,53 @@ export const getErrorReports = async (req, res) => {
   }
 };
 
-
-
-export const getGrowthStats = async (req, res) => {
+// Hàm tính thống kê tích lũy theo tháng
+export const getStats = async (req, res) => {
   try {
-    const animeGrowth = await Anime.aggregate([
-      { $group: { _id: { $month: "$createdAt" }, count: { $sum: 1 } } }
-    ]);
+    // Lấy tất cả dữ liệu
+    const animes = await Anime.find({}, 'createdAt views');
+    const episodes = await Episode.find({}, 'createdAt');
+    const users = await User.find({}, 'createdAt');
+    const reports = await Report.find({}, 'createdAt');
 
-    const episodeGrowth = await Episode.aggregate([
-      { $group: { _id: { $month: "$createdAt" }, count: { $sum: 1 } } }
-    ]);
+    // Hàm tính mảng 12 tháng tích lũy theo số lượng
+    const buildCumulative = (items) => {
+      const monthly = Array(12).fill(0);
+      items.forEach((item) => {
+        const month = new Date(item.createdAt).getMonth(); // 0–11
+        monthly[month] += 1;
+      });
+      return monthly.reduce((acc, val, i) => {
+        acc.push((acc[i - 1] || 0) + val);
+        return acc;
+      }, []);
+    };
 
-    const userGrowth = await User.aggregate([
-      { $group: { _id: { $month: "$createdAt" }, count: { $sum: 1 } } }
-    ]);
+    // Hàm tính mảng 12 tháng tích lũy theo tổng lượt xem
+    const buildViewStats = (items) => {
+      const monthly = Array(12).fill(0);
+      items.forEach((item) => {
+        const month = new Date(item.createdAt).getMonth(); // 0–11
+        monthly[month] += item.views || 0;
+      });
+      return monthly.reduce((acc, val, i) => {
+        acc.push((acc[i - 1] || 0) + val);
+        return acc;
+      }, []);
+    };
 
-    
+    const animeStats = buildCumulative(animes);
+    const episodeStats = buildCumulative(episodes);
+    const userStats = buildCumulative(users);
+    const reportStats = buildCumulative(reports);
+    const viewStats = buildViewStats(animes);
 
     res.json({
-      animeGrowth,
-      episodeGrowth,
-      userGrowth,
-      
+      animeStats,
+      episodeStats,
+      userStats,
+      reportStats,
+      viewStats,
     });
   } catch (error) {
     console.error("Lỗi khi lấy thống kê:", error);

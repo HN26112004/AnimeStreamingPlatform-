@@ -101,7 +101,7 @@ const addSeason = asyncHandler(async (req, res) => {
     const placeholderEpisode = new Episode({
         anime: animeId,
         seasonNumber,
-        episodeNumber: 0,
+        episodeNumber: 1,
         title: `Mùa ${seasonNumber}`,
         desc: 'Placeholder mùa mới',
         videoUrl: '',
